@@ -113,7 +113,9 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
   const [backgroundPosition, setBackgroundPosition] = useState({ x: 0, y: 0 });
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
   const backgroundRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   // 배경 음악 설정
   useEffect(() => {
@@ -481,13 +483,16 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
     const deltaX = touch.clientX - touchStart.x;
     const deltaY = touch.clientY - touchStart.y;
     
-    const maxOffset = 200;
+    // 이미지 크기에 따라 최대 오프셋 계산
+    const maxOffsetX = imageSize ? Math.max(0, imageSize.width - window.innerWidth) : 0;
+    const maxOffsetY = imageSize ? Math.max(0, imageSize.height - window.innerHeight) : 0;
+    
     setBackgroundPosition(prev => {
-      const newX = prev.x + deltaX * 0.5;
-      const newY = prev.y + deltaY * 0.5;
+      const newX = prev.x + deltaX;
+      const newY = prev.y + deltaY;
       return {
-        x: Math.max(-maxOffset, Math.min(maxOffset, newX)),
-        y: Math.max(-maxOffset, Math.min(maxOffset, newY))
+        x: Math.max(-maxOffsetX, Math.min(0, newX)),
+        y: Math.max(-maxOffsetY, Math.min(0, newY))
       };
     });
     
@@ -524,7 +529,7 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
 
   return (
     <div 
-      className="relative w-full h-screen overflow-hidden bg-slate-950 touch-none"
+      className="relative w-full h-screen overflow-auto bg-slate-950"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -532,31 +537,38 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
       {/* 배경 이미지 */}
       <div 
         ref={backgroundRef}
-        className="absolute inset-0 transition-transform duration-100 ease-out"
+        className="relative transition-transform duration-100 ease-out"
         style={{
           transform: `translate(${backgroundPosition.x}px, ${backgroundPosition.y}px)`,
           willChange: 'transform',
+          width: imageSize ? `${imageSize.width}px` : '100vw',
+          height: imageSize ? `${imageSize.height}px` : '100vh',
           minWidth: '100vw',
-          minHeight: '100vh',
-          width: 'max(100vw, 100%)',
-          height: 'max(100vh, 100%)'
+          minHeight: '100vh'
         }}
       >
         <img
+          ref={imageRef}
           src={backgroundUrl}
           alt="저택 서재"
-          className="select-none"
+          className="select-none block"
           style={{
-            width: 'max(100vw, 100%)',
-            height: 'max(100vh, 100%)',
-            minWidth: '100vw',
-            minHeight: '100vh',
-            objectFit: 'cover',
-            objectPosition: 'center'
+            width: 'auto',
+            height: 'auto',
+            maxWidth: 'none',
+            maxHeight: 'none',
+            display: 'block'
           }}
           draggable={false}
+          onLoad={(e) => {
+            const img = e.target as HTMLImageElement;
+            setImageSize({
+              width: img.naturalWidth,
+              height: img.naturalHeight
+            });
+          }}
         />
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/30 pointer-events-none" />
       </div>
       
       {/* 모바일 스와이프 안내 */}
