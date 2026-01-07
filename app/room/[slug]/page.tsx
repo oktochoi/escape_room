@@ -9,8 +9,9 @@ export async function generateStaticParams() {
   ];
 }
 
-export default function RoomPage({ params }: { params: { slug: string } }) {
-  const room = getExplorationRoomBySlug(params.slug);
+export default async function RoomPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const room = getExplorationRoomBySlug(slug);
 
   if (!room) {
     notFound();
