@@ -4,7 +4,6 @@ import RoomPageClient from './RoomPageClient';
 
 export async function generateStaticParams() {
   return [
-    { slug: 'lost-laboratory' },
     { slug: 'cursed-mansion' },
   ];
 }

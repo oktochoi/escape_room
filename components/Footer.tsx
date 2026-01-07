@@ -13,9 +13,9 @@ export default function Footer() {
           </div>
           
           <div className="flex items-center gap-6">
-            <a href="https://readdy.ai/?ref=logo" target="_blank" rel="noopener noreferrer" className="text-sm text-gray-400 hover:text-cyan-400 transition-colors cursor-pointer whitespace-nowrap">
-              Made with Readdy
-            </a>
+            <span className="text-sm text-gray-400 whitespace-nowrap">
+              made with FunZip
+            </span>
             <a href="#" className="text-sm text-gray-400 hover:text-cyan-400 transition-colors cursor-pointer whitespace-nowrap">
               이용약관
             </a>
