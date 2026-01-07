@@ -19,7 +19,7 @@ const OBJECTS = {
     puzzles: [
       {
         type: 'code' as const,
-        question: '● BOOK → 2, DESK → 3, CLOCK → 2, LIBRARY → ?',
+        question: '이 서재의 주인은 말보다 구조를, 설명보다 규칙을 남겼다.\n 책의 제목, 책상의 위치, 시계의 움직임, 그리고 서재라는 공간 자체까지.\n 이 방에 존재하는 것들은 각각 숫자로 해석될 수 있는 단서다.\n ● BOOK → 2, DESK → 3, CLOCK → 2, LIBRARY → ?',
         answer: '5',
         hint: '',
         imageUrl: '/images/cursed_house/first_room_book_shelf.png',
@@ -37,8 +37,8 @@ const OBJECTS = {
 
       {
         type: 'code' as const,
-        question: '●● READ = 3, BOOK = 4, PAGE = 2, WRITE = ?',
-        answer: '1',
+        question: '책상 위에는\n\n알 수 없는 말들이\n\n마구 적혀 있다.\n\n의미는 없거나,\n\n의미가 뒤집혀 있다.\n\n하지만 그중\n\n유독 눈에 띄는 문장이 있다.\n\n"우리는\n\n우리의 삶을\n\n거꾸로 읽어야 한다."',
+        answer: 'EVIL',
         hint: '',
         imageUrl: '/images/cursed_house/first_room_desk.png',
       },
@@ -52,13 +52,12 @@ const OBJECTS = {
     name: '초상화',
     position: { x: 85, y: 10, w: 12, h: 25 },
     puzzles: [
-
       {
         type: 'code' as const,
-        question: '●●● A = 1, D = 2, G = 3, J = 4, M = ?',
-        answer: '5',
+        question: '초상화들이\n\n벽에 걸려 있다.\n\n시선이\n\n모두 다른 곳을 향하고 있다.\n\n어쩐지\n\n보고 있는 쪽이\n\n틀린 것 같다.',
+        answer: '←↓↑←→↑', // left bottom up left right up
         hint: '',
-        imageUrl: '/images/cursed_house/first_room_picture.png',
+        imageUrl: '/images/cursed_house/up.png',
       },
     ],
     itemReward: 'key_5',
@@ -108,14 +107,6 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
   const topBarTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const unlockAudioRef = useRef<HTMLAudioElement | null>(null);
-  
-  // 모바일 스와이프 상태
-  const [backgroundPosition, setBackgroundPosition] = useState({ x: 0, y: 0 });
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
-  const backgroundRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
 
   // 배경 음악 설정
   useEffect(() => {
@@ -145,7 +136,7 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
 
   // 타이머
   useEffect(() => {
-    if (!isEscaped && !showCompletionScreen) {
+    if (!isEscaped && !showCompletionScreen && !showIntroText) {
       const interval = setInterval(() => {
         setTimer(prev => {
           if (prev <= 1) {
@@ -157,7 +148,7 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
 
       return () => clearInterval(interval);
     }
-  }, [isEscaped, showCompletionScreen]);
+  }, [isEscaped, showCompletionScreen, showIntroText]);
 
   // 탈출 키 획득 시 탈출 통로 표시
   useEffect(() => {
@@ -198,15 +189,15 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
     }
   };
 
-  // 입장 텍스트 자동 숨김
+  // 시간 종료 시 강제 종료
   useEffect(() => {
-    if (showIntroText) {
-      const timer = setTimeout(() => {
-        setShowIntroText(false);
-      }, 8000);
-      return () => clearTimeout(timer);
+    if (timer === 0 && !isEscaped && !showCompletionScreen) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      window.location.href = '/';
     }
-  }, [showIntroText]);
+  }, [timer, isEscaped, showCompletionScreen]);
 
   // 의미심장한 텍스트 표시
   useEffect(() => {
@@ -319,9 +310,10 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
       }
       setShowBookshelfHint(false);
     } else {
-      // 문제를 발견하지 못했을 때
+      // 문제를 발견하지 못했을 때 - 20초 감소
+      setTimer(prev => Math.max(0, prev - 20));
       setNotification({
-        message: `${obj.name}을(를) 조사했지만 아무것도 찾지 못했습니다. 다시 시도해보세요.`,
+        message: `${obj.name}을(를) 조사했지만 아무것도 찾지 못했습니다. 20초가 감소했습니다.`,
         type: 'error',
       });
       setTimeout(() => setNotification(null), 3000);
@@ -468,41 +460,6 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
     }
   };
 
-  // 모바일 터치 이벤트 핸들러
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (selectedObject || showIntroText || isEscaped) return;
-    const touch = e.touches[0];
-    setTouchStart({ x: touch.clientX, y: touch.clientY });
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart || !isDragging || selectedObject || showIntroText || isEscaped) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStart.x;
-    const deltaY = touch.clientY - touchStart.y;
-    
-    // 이미지 크기에 따라 최대 오프셋 계산
-    const maxOffsetX = imageSize ? Math.max(0, imageSize.width - window.innerWidth) : 0;
-    const maxOffsetY = imageSize ? Math.max(0, imageSize.height - window.innerHeight) : 0;
-    
-    setBackgroundPosition(prev => {
-      const newX = prev.x + deltaX;
-      const newY = prev.y + deltaY;
-      return {
-        x: Math.max(-maxOffsetX, Math.min(0, newX)),
-        y: Math.max(-maxOffsetY, Math.min(0, newY))
-      };
-    });
-    
-    setTouchStart({ x: touch.clientX, y: touch.clientY });
-  };
-
-  const handleTouchEnd = () => {
-    setTouchStart(null);
-    setIsDragging(false);
-  };
 
   const closeModal = () => {
     setShowPuzzle(false);
@@ -529,86 +486,106 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
 
   return (
     <div 
-      className="relative w-full h-screen overflow-auto bg-slate-950"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      className="relative w-full h-screen overflow-hidden bg-slate-950"
     >
       {/* 배경 이미지 */}
-      <div 
-        ref={backgroundRef}
-        className="relative transition-transform duration-100 ease-out"
-        style={{
-          transform: `translate(${backgroundPosition.x}px, ${backgroundPosition.y}px)`,
-          willChange: 'transform',
-          width: imageSize ? `${imageSize.width}px` : '100vw',
-          height: imageSize ? `${imageSize.height}px` : '100vh',
-          minWidth: '100vw',
-          minHeight: '100vh'
-        }}
-      >
+      <div className="absolute inset-0">
         <img
-          ref={imageRef}
           src={backgroundUrl}
           alt="저택 서재"
-          className="select-none block"
-          style={{
-            width: 'auto',
-            height: 'auto',
-            maxWidth: 'none',
-            maxHeight: 'none',
-            display: 'block'
-          }}
+          className="w-full h-full object-cover select-none"
           draggable={false}
-          onLoad={(e) => {
-            const img = e.target as HTMLImageElement;
-            setImageSize({
-              width: img.naturalWidth,
-              height: img.naturalHeight
-            });
-          }}
         />
         <div className="absolute inset-0 bg-black/30 pointer-events-none" />
       </div>
-      
-      {/* 모바일 스와이프 안내 */}
-      {!showIntroText && !selectedObject && !isEscaped && (
-        <div className="md:hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 bg-black/70 backdrop-blur-md px-4 py-2 rounded-lg border border-cyan-400/30 animate-fade-in">
-          <p className="text-cyan-300 text-xs text-center">
-            <i className="ri-hand-swipe-line mr-2"></i>
-            스와이프하여 방을 탐색하세요
-          </p>
-        </div>
-      )}
 
       {/* 입장 텍스트 */}
       {showIntroText && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="max-w-3xl mx-auto px-6 text-center">
-            <div className="space-y-4 text-white">
-              <p className="text-lg md:text-xl leading-relaxed">
-                이 방은 저택의 마지막 주인이 평생을 보낸 서재다.
-              </p>
-              <p className="text-lg md:text-xl leading-relaxed">
-                그는 말하지 않았다.
-              </p>
-              <p className="text-lg md:text-xl leading-relaxed">
-                다만, 남겨 두었을 뿐이다.
-              </p>
-              <p className="text-lg md:text-xl leading-relaxed">
-                이 방에 남은 것은
-              </p>
-              <p className="text-lg md:text-xl leading-relaxed">
-                책, 그림, 그리고 멈추지 않는 시간이다.
-              </p>
+        <div 
+          className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm cursor-pointer overflow-y-auto"
+          onClick={() => setShowIntroText(false)}
+        >
+          <div className="min-h-screen flex items-start justify-center py-20">
+            <div className="max-w-4xl mx-auto px-6 text-center mt-20">
+              <div className="space-y-6 md:space-y-8 text-white">
+                <p className="text-lg md:text-xl leading-relaxed">
+                  아무도 이 저택에
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  오래 머물지 못했다.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed mt-8">
+                  문은 언제나 열려 있었지만
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  나간 사람은 없었다.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed mt-8">
+                  이곳의 저주는
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  문을 잠그지 않는다.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  대신
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  생각을 묶어 둔다.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed mt-8">
+                  방 안에는
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  설명 없는 단서들이 남아 있다.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  책, 책상, 시계, 초상화.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  모든 것은 의미를 품고 있지만
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  아무것도 말해주지 않는다.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed mt-8">
+                  이 저택에서 살아남은 사람들은
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  같은 말을 남겼다.
+                </p>
+                <p className="text-xl md:text-2xl leading-relaxed font-semibold text-cyan-400 italic mt-6">
+                  "보이는 것을 믿지 말고,
+                </p>
+                <p className="text-xl md:text-2xl leading-relaxed font-semibold text-cyan-400 italic">
+                  쓰이는 것을 찾아라."
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed mt-12">
+                  이제
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  당신의 차례다.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed mt-8">
+                  문은 열려 있다.
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  탈출할 수 있는지는
+                </p>
+                <p className="text-lg md:text-xl leading-relaxed">
+                  아직 모른다.
+                </p>
+                <p className="text-sm md:text-base text-cyan-400/80 mt-16 animate-pulse">
+                  화면을 클릭하여 시작하세요
+                </p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 상단 호버 감지 영역 */}
+      {/* 상단 호버 감지 영역 (데스크톱만) */}
       <div
-        className="absolute top-0 left-0 right-0 h-20 z-30"
+        className="hidden md:block absolute top-0 left-0 right-0 h-20 z-30"
         onMouseEnter={() => {
           if (topBarTimerRef.current) {
             clearTimeout(topBarTimerRef.current);
@@ -625,17 +602,11 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
       />
 
       {/* 상단 바 */}
-      <div className={`absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent p-2 md:p-4 transition-opacity duration-300 ${
-        showTopBar ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      <div className={`absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent p-2 md:p-4 transition-opacity duration-300 md:transition-opacity ${
+        showTopBar ? 'opacity-100' : 'opacity-100 md:opacity-0 pointer-events-auto md:pointer-events-none'
       }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
-            <button
-              onClick={() => window.history.back()}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-lg transition-colors backdrop-blur-sm flex-shrink-0"
-            >
-              <i className="ri-arrow-left-line text-lg md:text-xl text-white"></i>
-            </button>
             <div className="min-w-0">
               <h1 className="text-base md:text-2xl font-bold text-white truncate">{room.title}</h1>
               <p className="text-xs md:text-sm text-cyan-300 truncate">{currentSubRoom.name}</p>
@@ -688,15 +659,7 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
         </div>
       </div>
 
-      {/* 책장 힌트 */}
-      {showBookshelfHint && !showIntroText && (
-        <div className="absolute left-8 top-1/2 transform -translate-y-1/2 z-20 bg-black/70 backdrop-blur-md px-4 py-3 rounded-lg border border-cyan-400/30 animate-fade-in">
-          <p className="text-cyan-300 text-sm md:text-base italic">
-            "지식은 책상 위에서 깨어난다."
-          </p>
-        </div>
-      )}
-
+  
       {/* 의미심장한 텍스트들 */}
       {mysteriousTexts.map((item) => (
         <div
@@ -899,4 +862,19 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
     </div>
   );
 }
+
+<style jsx global>{`
+  @keyframes credits-scroll {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-200vh);
+    }
+  }
+  .animate-credits-scroll {
+    animation: credits-scroll 50s linear;
+    animation-fill-mode: forwards;
+  }
+`}</style>
 

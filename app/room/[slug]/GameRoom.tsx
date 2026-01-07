@@ -51,7 +51,7 @@ export default function GameRoom({ room, questions }: GameRoomProps) {
     const correctAnswer = currentQ.answer.toLowerCase();
 
     if (normalizedAnswer === correctAnswer) {
-      setFeedback('정답입니다! 🎉');
+      setFeedback('정답입니다!');
       setTimeout(() => {
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(currentQuestion + 1);
