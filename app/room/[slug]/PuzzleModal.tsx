@@ -14,8 +14,6 @@ interface PuzzleModalProps {
 
 export default function PuzzleModal({ hotspot, onSolve, onClose, onHintUsed, onWrongAnswer, isSolved = false }: PuzzleModalProps) {
   const [answer, setAnswer] = useState('');
-  const [showHint, setShowHint] = useState(false);
-  const [hintUsed, setHintUsed] = useState(false);
   const [error, setError] = useState('');
   const [isShaking, setIsShaking] = useState(false);
 
@@ -129,59 +127,13 @@ export default function PuzzleModal({ hotspot, onSolve, onClose, onHintUsed, onW
             <div className="flex items-center gap-3">
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold rounded-lg transition-all whitespace-nowrap"
+                disabled={isSolved}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all whitespace-nowrap"
               >
-                확인
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => {
-                  if (!hintUsed && !showHint) {
-                    setHintUsed(true);
-                    onHintUsed?.();
-                  }
-                  setShowHint(!showHint);
-                }}
-                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-colors whitespace-nowrap"
-              >
-                <div className="flex items-center gap-2">
-                  <i className="ri-lightbulb-line"></i>
-                  <span>힌트</span>
-                </div>
+                {isSolved ? '이미 해결됨' : '확인'}
               </button>
             </div>
           </form>
-
-          {showHint && (
-            <div className="mt-4 space-y-4">
-              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <i className="ri-lightbulb-flash-line text-xl text-yellow-400 mt-0.5"></i>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-yellow-400 mb-1">힌트</p>
-                    <p className="text-sm text-white/80">{hotspot.puzzle.hint}</p>
-                  </div>
-                </div>
-              </div>
-              {hotspot.puzzle.imageUrl && (
-                <div className="relative w-full h-48 overflow-hidden rounded-lg border-2 border-yellow-500/30">
-                  <img
-                    src={hotspot.puzzle.imageUrl}
-                    alt={`${hotspot.name} 힌트 이미지`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-yellow-900/50 to-transparent" />
-                  <div className="absolute bottom-2 left-2 px-2 py-1 bg-yellow-500/80 backdrop-blur-sm rounded text-xs text-white font-medium">
-                    힌트 이미지
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {hotspot.itemReward && (
             <div className="mt-4 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">

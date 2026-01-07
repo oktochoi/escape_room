@@ -535,13 +535,25 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
         className="absolute inset-0 transition-transform duration-100 ease-out"
         style={{
           transform: `translate(${backgroundPosition.x}px, ${backgroundPosition.y}px)`,
-          willChange: 'transform'
+          willChange: 'transform',
+          minWidth: '100vw',
+          minHeight: '100vh',
+          width: 'max(100vw, 100%)',
+          height: 'max(100vh, 100%)'
         }}
       >
         <img
           src={backgroundUrl}
           alt="저택 서재"
-          className="w-full h-full object-cover select-none"
+          className="select-none"
+          style={{
+            width: 'max(100vw, 100%)',
+            height: 'max(100vh, 100%)',
+            minWidth: '100vw',
+            minHeight: '100vh',
+            objectFit: 'cover',
+            objectPosition: 'center'
+          }}
           draggable={false}
         />
         <div className="absolute inset-0 bg-black/30" />
