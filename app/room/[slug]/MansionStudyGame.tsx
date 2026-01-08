@@ -92,6 +92,7 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
   const [showEscapePath, setShowEscapePath] = useState(false);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const [showIntroText, setShowIntroText] = useState(true);
+  const [showFailureScreen, setShowFailureScreen] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
   const [startTime] = useState<number>(Date.now());
   const [escapeTime, setEscapeTime] = useState<number | null>(null);
@@ -107,6 +108,7 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
   const topBarTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const unlockAudioRef = useRef<HTMLAudioElement | null>(null);
+  const introScrollRef = useRef<HTMLDivElement | null>(null);
 
   // 배경 음악 설정
   useEffect(() => {
@@ -136,7 +138,7 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
 
   // 타이머
   useEffect(() => {
-    if (!isEscaped && !showCompletionScreen && !showIntroText) {
+    if (!isEscaped && !showCompletionScreen && !showIntroText && !showFailureScreen) {
       const interval = setInterval(() => {
         setTimer(prev => {
           if (prev <= 1) {
@@ -148,7 +150,7 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
 
       return () => clearInterval(interval);
     }
-  }, [isEscaped, showCompletionScreen, showIntroText]);
+  }, [isEscaped, showCompletionScreen, showIntroText, showFailureScreen]);
 
   // 탈출 키 획득 시 탈출 통로 표시
   useEffect(() => {
@@ -166,6 +168,15 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes}분 ${seconds}초`;
+  };
+
+  const formatRemainingTime = () => {
+    const totalSeconds = room.timeLimit || 480; // 8분 = 480초
+    const remainingSeconds = timer;
+    const usedSeconds = totalSeconds - remainingSeconds;
+    const usedMinutes = Math.floor(usedSeconds / 60);
+    const usedSecs = usedSeconds % 60;
+    return `${usedMinutes}분 ${usedSecs}초`;
   };
 
   const formatTime = (seconds: number) => {
@@ -189,15 +200,59 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
     }
   };
 
-  // 시간 종료 시 강제 종료
+  // 시간 종료 시 실패 화면 표시
   useEffect(() => {
-    if (timer === 0 && !isEscaped && !showCompletionScreen) {
+    if (timer === 0 && !isEscaped && !showCompletionScreen && !showFailureScreen) {
       if (audioRef.current) {
         audioRef.current.pause();
       }
-      window.location.href = '/';
+      setShowFailureScreen(true);
     }
-  }, [timer, isEscaped, showCompletionScreen]);
+  }, [timer, isEscaped, showCompletionScreen, showFailureScreen]);
+
+  // 인트로 자동 스크롤
+  useEffect(() => {
+    if (!showIntroText || !introScrollRef.current) return;
+
+    const scrollContainer = introScrollRef.current;
+    let scrollPosition = 0;
+    const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+    const scrollSpeed = 0.5; // 픽셀/프레임
+    const targetDuration = 30000; // 30초 동안 스크롤
+    const totalFrames = (targetDuration / 16.67); // 60fps 기준
+    const scrollPerFrame = maxScroll / totalFrames;
+
+    let animationFrameId: number;
+    let startTime: number | null = null;
+
+    const animate = (currentTime: number) => {
+      if (startTime === null) {
+        startTime = currentTime;
+      }
+
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / targetDuration, 1);
+      
+      scrollPosition = maxScroll * progress;
+      scrollContainer.scrollTop = scrollPosition;
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    // 약간의 지연 후 시작
+    const timeoutId = setTimeout(() => {
+      animationFrameId = requestAnimationFrame(animate);
+    }, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [showIntroText]);
 
   // 의미심장한 텍스트 표시
   useEffect(() => {
@@ -502,82 +557,26 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
       {/* 입장 텍스트 */}
       {showIntroText && (
         <div 
-          className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm cursor-pointer overflow-y-auto"
+          className="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm cursor-pointer overflow-hidden"
           onClick={() => setShowIntroText(false)}
         >
-          <div className="min-h-screen flex items-start justify-center py-20">
-            <div className="max-w-4xl mx-auto px-6 text-center mt-20">
-              <div className="space-y-6 md:space-y-8 text-white">
-                <p className="text-lg md:text-xl leading-relaxed">
-                  아무도 이 저택에
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  오래 머물지 못했다.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed mt-8">
-                  문은 언제나 열려 있었지만
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  나간 사람은 없었다.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed mt-8">
-                  이곳의 저주는
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  문을 잠그지 않는다.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  대신
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  생각을 묶어 둔다.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed mt-8">
-                  방 안에는
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  설명 없는 단서들이 남아 있다.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  책, 책상, 시계, 초상화.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  모든 것은 의미를 품고 있지만
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  아무것도 말해주지 않는다.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed mt-8">
-                  이 저택에서 살아남은 사람들은
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  같은 말을 남겼다.
-                </p>
-                <p className="text-xl md:text-2xl leading-relaxed font-semibold text-cyan-400 italic mt-6">
-                  "보이는 것을 믿지 말고,
-                </p>
-                <p className="text-xl md:text-2xl leading-relaxed font-semibold text-cyan-400 italic">
-                  쓰이는 것을 찾아라."
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed mt-12">
-                  이제
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  당신의 차례다.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed mt-8">
-                  문은 열려 있다.
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  탈출할 수 있는지는
-                </p>
-                <p className="text-lg md:text-xl leading-relaxed">
-                  아직 모른다.
-                </p>
-                <p className="text-sm md:text-base text-cyan-400/80 mt-16 animate-pulse">
-                  화면을 클릭하여 시작하세요
-                </p>
+          <div className="relative w-full h-full">
+            {/* 스크롤되는 텍스트들 */}
+            <div 
+              ref={introScrollRef}
+              className="absolute inset-0 overflow-y-auto scroll-smooth"
+            >
+              <div className="min-h-[200vh] flex flex-col items-center justify-end pb-[100vh]">
+                <div className="max-w-4xl mx-auto px-6 text-center space-y-6 md:space-y-8">
+                </div>
               </div>
+            </div>
+            
+            {/* 가운데 고정된 시작 텍스트 */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p className="text-lg md:text-xl text-cyan-300/90 animate-pulse font-medium drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+                화면을 클릭하여 시작하세요
+              </p>
             </div>
           </div>
         </div>
@@ -602,42 +601,47 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
       />
 
       {/* 상단 바 */}
-      <div className={`absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent p-2 md:p-4 transition-opacity duration-300 md:transition-opacity ${
-        showTopBar ? 'opacity-100' : 'opacity-100 md:opacity-0 pointer-events-auto md:pointer-events-none'
-      }`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 md:gap-4 min-w-0">
-            <div className="min-w-0">
-              <h1 className="text-base md:text-2xl font-bold text-white truncate">{room.title}</h1>
-              <p className="text-xs md:text-sm text-cyan-300 truncate">{currentSubRoom.name}</p>
+      {!showIntroText && (
+        <div className={`absolute top-0 left-0 right-0 z-30 bg-gradient-to-b from-black/80 to-transparent p-2 md:p-4 transition-opacity duration-300 md:transition-opacity ${
+          showTopBar ? 'opacity-100' : 'opacity-100 md:opacity-0 pointer-events-auto md:pointer-events-none'
+        }`}>
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 md:gap-4 min-w-0">
+              <div className="min-w-0">
+                <h1 className="text-base md:text-2xl font-bold text-white truncate">{room.title}</h1>
+                <p className="text-xs md:text-sm text-cyan-300 truncate">{currentSubRoom.name}</p>
+              </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-1.5 md:gap-3 flex-shrink-0">
-            <button
-              onClick={toggleMusic}
-              className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-colors"
-            >
-              <i className={`${isMusicPlaying ? 'ri-volume-up-line' : 'ri-volume-mute-line'} text-lg md:text-xl text-cyan-400`}></i>
-            </button>
-
-            <button
-              onClick={() => setShowInventory(!showInventory)}
-              className="relative px-2 md:px-4 py-1.5 md:py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg transition-colors whitespace-nowrap"
-            >
-              <div className="flex items-center gap-1.5 md:gap-2">
-                <i className="ri-briefcase-line text-cyan-400 text-lg md:text-base"></i>
-                <span className="text-white text-xs md:text-base hidden sm:inline">인벤토리</span>
-                {inventory.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-cyan-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {inventory.length}
-                  </span>
-                )}
-              </div>
-            </button>
-          </div>
         </div>
-      </div>
+      )}
+
+      {/* 인벤토리와 소리 버튼 (항상 표시, 인트로 제외) */}
+      {!showIntroText && (
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-2 pointer-events-auto">
+          <button
+            onClick={toggleMusic}
+            className="w-12 h-12 flex items-center justify-center bg-black/80 hover:bg-black/90 backdrop-blur-md rounded-lg transition-all border-2 border-cyan-400/50 shadow-lg shadow-cyan-400/20"
+          >
+            <i className={`${isMusicPlaying ? 'ri-volume-up-line' : 'ri-volume-mute-line'} text-2xl text-cyan-400`}></i>
+          </button>
+
+          <button
+            onClick={() => setShowInventory(!showInventory)}
+            className="relative px-5 py-2.5 bg-black/80 hover:bg-black/90 backdrop-blur-md rounded-lg transition-all border-2 border-cyan-400/50 shadow-lg shadow-cyan-400/20"
+          >
+            <div className="flex items-center gap-2">
+              <i className="ri-briefcase-line text-cyan-400 text-lg"></i>
+              <span className="text-white text-base font-medium">인벤토리</span>
+              {inventory.length > 0 && (
+                <span className="absolute -top-2 -right-2 w-6 h-6 bg-cyan-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg">
+                  {inventory.length}
+                </span>
+              )}
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* 가운데 타이머 (항상 표시) */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30 pointer-events-none">
@@ -704,7 +708,9 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
             >
               <div className="w-full h-full">
                 {hoveredObject === obj.id && (
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full mb-2 pointer-events-none z-50">
+                  <div className={`absolute left-1/2 transform -translate-x-1/2 pointer-events-none z-50 ${
+                    'top-0 -translate-y-full mb-2'
+                  }`}>
                     <div className={`px-3 md:px-4 py-1.5 md:py-2 bg-black/90 backdrop-blur-md rounded-lg border ${
                       isSolved ? 'border-green-400/70' : 'border-cyan-400/70'
                     } shadow-lg whitespace-nowrap`}>
@@ -726,7 +732,11 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
                         )}
                       </div>
                     </div>
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-cyan-400/70"></div>
+                    <div className={`absolute left-1/2 transform -translate-x-1/2 w-0 h-0 ${
+                      obj.id === 'portrait' || obj.id === 'bookshelf'
+                        ? 'top-full border-l-4 border-r-4 border-t-4 border-transparent border-t-cyan-400/70'
+                        : 'top-full border-l-4 border-r-4 border-t-4 border-transparent border-t-cyan-400/70'
+                    }`}></div>
                   </div>
                 )}
                 {!hoveredObject && !isSolved && (
@@ -836,22 +846,54 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
                   </div>
                 </div>
               </div>
-              {escapeTime && (
-                <div className="bg-white/5 rounded-lg p-4 border border-cyan-400/30">
-                  <p className="text-cyan-300 text-lg font-semibold mb-2">
-                    탈출 시간
-                  </p>
-                  <p className="text-white text-2xl font-bold">
-                    {formatEscapeTime(escapeTime)}
-                  </p>
-                  <p className="text-white/70 text-sm mt-2">
-                    축하합니다! 저택의 저주를 풀었습니다.
-                  </p>
-                </div>
-              )}
+              <div className="bg-white/5 rounded-lg p-4 border border-cyan-400/30">
+                <p className="text-cyan-300 text-lg font-semibold mb-2">
+                  탈출 시간
+                </p>
+                <p className="text-white text-2xl font-bold">
+                  8분 - {formatTime(timer)} = {formatRemainingTime()}
+                </p>
+                <p className="text-white/70 text-sm mt-2">
+                  축하합니다! 저택의 저주를 풀었습니다.
+                </p>
+              </div>
               <button
                 onClick={() => window.location.href = '/'}
                 className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold rounded-lg transition-all"
+              >
+                메인으로 돌아가기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 실패 화면 */}
+      {showFailureScreen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <div className="max-w-3xl w-full bg-gradient-to-br from-red-900/50 to-orange-900/50 rounded-2xl border-2 border-red-400/50 shadow-2xl p-6 md:p-8">
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center bg-gradient-to-br from-red-500 to-orange-500 rounded-full">
+                <i className="ri-time-line text-4xl text-white"></i>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">실패했습니다</h2>
+              <p className="text-xl text-red-300 mb-6">
+                시간이 모두 소진되었습니다.
+              </p>
+              <div className="bg-white/5 rounded-lg p-4 border border-red-400/30">
+                <p className="text-red-300 text-lg font-semibold mb-2">
+                  남은 시간
+                </p>
+                <p className="text-white text-2xl font-bold">
+                  {formatTime(timer)}
+                </p>
+                <p className="text-white/70 text-sm mt-2">
+                  다시 도전해보세요!
+                </p>
+              </div>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="px-8 py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all"
               >
                 메인으로 돌아가기
               </button>
@@ -875,6 +917,20 @@ export default function MansionStudyGame({ room }: MansionStudyGameProps) {
   .animate-credits-scroll {
     animation: credits-scroll 50s linear;
     animation-fill-mode: forwards;
+  }
+  @keyframes slide-up-intro {
+    from {
+      opacity: 0;
+      transform: translateY(50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-slide-up-intro {
+    animation: slide-up-intro 1s ease-out forwards;
+    opacity: 0;
   }
 `}</style>
 

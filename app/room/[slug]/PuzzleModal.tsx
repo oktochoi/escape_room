@@ -28,7 +28,6 @@ export default function PuzzleModal({ hotspot, onSolve, onClose, onHintUsed, onW
   // 각 초상화의 로마 숫자: 2, 1, 5, 4, 3, 6
   const portraitRomanNumbers = ['II', 'I', 'V', 'IV', 'III', 'VI'];
   // 각 초상화가 가리키는 방향: bottom, left, right, left, up, up
-  const portraitDirections = ['↓', '←', '→', '←', '↑', '↑'];
   const portraitImages = [
     '/images/cursed_house/bottom.png', // 초상화 1 - 아랍어 2, 방향: bottom
     '/images/cursed_house/left.png',   // 초상화 2 - 아랍어 1, 방향: left
@@ -247,9 +246,6 @@ export default function PuzzleModal({ hotspot, onSolve, onClose, onHintUsed, onW
                           {portraitRomanNumbers[index]}
                         </div>
                         {/* 방향 표시 */}
-                        <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded text-amber-400 text-xl font-bold">
-                          {portraitDirections[index]}
-                        </div>
                       </div>
                     </div>
                   ))}
