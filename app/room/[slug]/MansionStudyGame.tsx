@@ -37,7 +37,7 @@ const OBJECTS = {
 
       {
         type: 'code' as const,
-        question: '책상 위에는\n\n알 수 없는 말들이\n\n마구 적혀 있다.\n\n의미는 없거나,\n\n의미가 뒤집혀 있다.\n\n하지만 그중\n\n유독 눈에 띄는 문장이 있다.\n\n"우리는\n\n우리의 삶을\n\n거꾸로 읽어야 한다."',
+        question: '●● 책상 위에는\n\n알 수 없는 말들이\n\n마구 적혀 있다.\n\n의미는 없거나,\n\n의미가 뒤집혀 있다.\n\n하지만 그중\n\n유독 눈에 띄는 문장이 있다.\n\n"우리는\n\n우리의 삶을\n\n거꾸로 읽어야 한다."',
         answer: 'EVIL',
         hint: '',
         imageUrl: '/images/cursed_house/first_room_desk.png',
@@ -54,7 +54,7 @@ const OBJECTS = {
     puzzles: [
       {
         type: 'code' as const,
-        question: '초상화들이\n\n벽에 걸려 있다.\n\n시선이\n\n모두 다른 곳을 향하고 있다.\n\n어쩐지\n\n보고 있는 쪽이\n\n틀린 것 같다.',
+        question: '●●● 초상화들이\n\n벽에 걸려 있다.\n\n시선이\n\n모두 다른 곳을 향하고 있다.\n\n어쩐지\n\n보고 있는 쪽이\n\n틀린 것 같다.',
         answer: '←↓↑←→↑', // left bottom up left right up
         hint: '',
         imageUrl: '/images/cursed_house/up.png',
