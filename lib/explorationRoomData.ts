@@ -79,7 +79,7 @@ const createBackgroundUrl = (theme: string): string => {
 const createPuzzleImageUrl = (item: string): string => {
   // 로컬 이미지 우선 사용
   const localImages: Record<string, string> = {
-    // 서제 - 저택 서제 이미지
+    // 서재 - 저택 서재 이미지
     shelf: '/images/cursed_house/first_room_book_shelf.png',
     bookshelf: '/images/cursed_house/first_room_book_shelf.png',
     // 시계 - 저택 시계 이미지
@@ -162,12 +162,12 @@ export const explorationRooms: ExplorationRoom[] = [
           },
           {
             id: 'bookshelf',
-            name: '거대한 서제',
+            name: '거대한 서재',
             position: { x: 5, y: 10, w: 20, h: 60 },
             isSolved: false,
             puzzle: {
               type: 'code',
-              question: '서제에 있는 책들의 제목 첫 글자: A, B, C, D, ? 다음은?',
+              question: '서재에 있는 책들의 제목 첫 글자: A, B, C, D, ? 다음은?',
               answer: 'E',
               hint: '알파벳 순서를 따라가세요',
               imageUrl: createPuzzleImageUrl('bookshelf'),

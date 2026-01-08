@@ -119,7 +119,7 @@ export default function RoomIntro({ room, onStart }: RoomIntroProps) {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-cyan-400 mt-1">•</span>
-                      <span>모바일은 가로버전으로 진행해주세요</span>
+                      <span>모바일은 가로버전으로 진행해주세요ㅁ</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-cyan-400 mt-1">•</span>

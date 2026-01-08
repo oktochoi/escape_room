@@ -14,7 +14,7 @@ interface MansionStudyGameProps {
 const OBJECTS = {
   bookshelf: {
     id: 'bookshelf',
-    name: '거대한 서제',
+    name: '거대한 서재',
     position: { x: 5, y: 10, w: 20, h: 60 },
     puzzles: [
       {
